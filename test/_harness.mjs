@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
-export const APP = 'file://' + resolve(dirname(fileURLToPath(import.meta.url)), '..', 'split-turn-load.html');
+export const APP = 'file://' + resolve(dirname(fileURLToPath(import.meta.url)), '..', 'index.html');
 
 let failures = 0;
 export function check(name, ok, detail) {

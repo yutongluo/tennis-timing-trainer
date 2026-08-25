@@ -9,14 +9,14 @@ the trigger rather than after it.
 It is measured here rather than hard-coded so that swapping in different recordings
 (human, another voice, another language) needs no other change.
 
-Usage:  python3 voice/inject-voice.py [path/to/split-turn-load.html]
+Usage:  python3 voice/inject-voice.py [path/to/index.html]
 """
 import base64, io, json, os, sys, wave
 import numpy as np
 
 WORDS = ["split", "turn", "load", "hit"]
 HERE = os.path.dirname(os.path.abspath(__file__))
-APP = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "split-turn-load.html")
+APP = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "index.html")
 
 def p_centre(path, hop_s=0.005, win_s=0.015, frac=0.30, hold=4):
     """First sustained rise above `frac` of peak short-time RMS."""

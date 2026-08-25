@@ -7,12 +7,10 @@ are chronically late on.
 Built for one specific fault — turning the shoulders late — and the diagnostic is designed
 around that: a signed **bias** per beat, not a score.
 
-```
-open split-turn-load.html
-```
+**Play it:** https://YOURNAME.github.io/tennis-timing-trainer/ — or just `open index.html`.
 
-That is the whole app. One file, no dependencies, no build step. The cue audio is embedded
-as base64 PCM, so it works offline and from `file://`.
+That is the whole app: one file, no dependencies, no build step. The cue audio is embedded
+as base64 PCM, so it works offline, from `file://`, and from any static host.
 
 ## The four beats
 
@@ -36,13 +34,32 @@ Two design rules, both learned the hard way (see `docs/design-notes.md` for the 
 ## Layout
 
 ```
-split-turn-load.html     the entire app
+index.html               the entire app
 docs/design-notes.md     why every number is what it is, with sources
 voice/build-voice.sh     regenerate the cue words (espeak-ng + ffmpeg)
 voice/inject-voice.py    measure perceptual centres, embed into the HTML
-voice/*.wav             the four cue words, 16 kHz mono PCM
+voice/*.wav              the four cue words, 16 kHz mono PCM
 test/                    Playwright harness — physics, audio timing, a bot rally
+.github/workflows/       CI: runs the tests on every push
 ```
+
+## Hosting
+
+It is a static single file, so any static host works. For GitHub Pages:
+
+1. Push this repo to GitHub.
+2. **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`.**
+3. It appears at `https://<user>.github.io/<repo>/` within a minute or so.
+
+No build step and no workflow are needed for the deploy — `index.html` is served as-is.
+`.nojekyll` is present so GitHub serves the tree untouched.
+
+Two things worth knowing before making it public:
+
+- The page stores settings and your last 400 reps in `localStorage`, per browser. Nothing
+  is sent anywhere; there is no backend and no analytics.
+- There is no `LICENSE` file, which means default copyright — all rights reserved. Add one
+  if you want other people to be able to reuse it.
 
 ## Cue audio
 
