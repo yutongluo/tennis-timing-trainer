@@ -7,7 +7,7 @@ are chronically late on.
 Built for one specific fault — turning the shoulders late — and the diagnostic is designed
 around that: a signed **bias** per beat, not a score.
 
-**Play it:** https://YOURNAME.github.io/tennis-timing-trainer/ — or just `open index.html`.
+**Play it:** `open index.html`. No server, no build, no network.
 
 That is the whole app: one file, no dependencies, no build step. The cue audio is embedded
 as base64 PCM, so it works offline, from `file://`, and from any static host.
@@ -45,21 +45,20 @@ test/                    Playwright harness — physics, audio timing, a bot ral
 
 ## Hosting
 
-It is a static single file, so any static host works. For GitHub Pages:
-
-1. Push this repo to GitHub.
-2. **Settings → Pages → Build and deployment → Deploy from a branch → `main` / `/ (root)`.**
-3. It appears at `https://<user>.github.io/<repo>/` within a minute or so.
-
-No build step and no workflow are needed for the deploy — `index.html` is served as-is.
+The app is a single static file with no backend, so any static host serves it as-is.
 `.nojekyll` is present so GitHub serves the tree untouched.
 
-Two things worth knowing before making it public:
+**On a private repo, GitHub Pages requires a paid plan** (GitHub Pro). Without one, pushing
+here gets you version history and backup, not a URL. Three ways to get a link:
 
-- The page stores settings and your last 400 reps in `localStorage`, per browser. Nothing
-  is sent anywhere; there is no backend and no analytics.
-- There is no `LICENSE` file, which means default copyright — all rights reserved. Add one
-  if you want other people to be able to reuse it.
+| Want | Do |
+|---|---|
+| Just play it | `open index.html` — it works offline, `file://` and all |
+| A private link, no cost | Already have one: the Claude artifact this was published from |
+| A public `github.io` URL | Make the repo public, then **Settings → Pages → Deploy from a branch → `main` / `/ (root)`** |
+
+If you later want a shareable URL without making this repo public, copy `index.html` alone
+into a small public repo — it is genuinely self-contained, so nothing else has to come with it.
 
 ## Cue audio
 
