@@ -9,8 +9,10 @@ around that: a signed **bias** per beat, not a score.
 
 **Play it:** `open index.html`. No server, no build, no network.
 
-That is the whole app: one file, no dependencies, no build step. The cue audio is embedded
-as base64 PCM, so it works offline, from `file://`, and from any static host.
+`index.html` is the whole app — no dependencies, no build step, cue audio embedded as base64
+PCM, works from `file://`. The manifest, service worker and icons alongside it are additive:
+they make it installable and offline-capable when served over HTTPS, and nothing breaks
+without them.
 
 ## The four beats
 
@@ -20,6 +22,26 @@ as base64 PCM, so it works offline, from `file://`, and from any static host.
 | Turn | the instant the side is readable — ~5 m of ball flight | `←` `→` (side must be correct) | "turn" |
 | Load | the ball bounces — coil complete, racket at the top of its loop, legs loaded | `↓` | "load" |
 | Contact | on the rise, between the bounce and the top of the bounce | `↑` | "hit" |
+
+## On a phone
+
+Landscape, held in two hands. **The screen is the input:** tap either half on each beat, and
+on the turn tap the side the ball is going — a divider fades in while that's the beat in
+question. There are no buttons to aim at, so your eyes stay on the ball.
+
+Which beat a tap belongs to is inferred, because the beats are strictly ordered and the
+tightest gap is only ~220 ms (load → contact). The rule is: the nearest un-hit beat in time,
+never one earlier than a beat already taken. `test/touch.mjs` pins that down, including the
+tight pair and the skip-a-beat case.
+
+Touch adds tens of milliseconds of screen-scan and dispatch latency to every beat equally,
+which would read as lateness. Reps are therefore tagged with their input method and the
+lifetime aggregates never mix touch with keyboard — **don't compare your phone numbers with
+your desktop numbers.**
+
+Add it to your home screen and it runs offline (manifest + service worker, cache-first).
+Screen wake lock holds during a rally; a short vibration marks each beat, and a longer double
+buzz marks a miss — Android only, since iOS has no web Vibration API.
 
 Two design rules, both learned the hard way (see `docs/design-notes.md` for the full story):
 
@@ -35,6 +57,9 @@ Two design rules, both learned the hard way (see `docs/design-notes.md` for the 
 
 ```
 index.html               the entire app
+manifest.webmanifest     installable metadata
+sw.js                    service worker — cache-first, offline
+icons/                   app icons (192, 512, maskable)
 docs/design-notes.md     why every number is what it is, with sources
 voice/build-voice.sh     regenerate the cue words (espeak-ng + ffmpeg)
 voice/inject-voice.py    measure perceptual centres, embed into the HTML

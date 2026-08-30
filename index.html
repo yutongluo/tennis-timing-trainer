@@ -1,5 +1,11 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0A1114">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Split Turn Load</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +30,15 @@ body{
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 :focus-visible{outline:2px solid var(--ball); outline-offset:2px; border-radius:3px}
 
-#app{display:flex; flex-direction:column; height:100dvh; min-height:520px; overflow:hidden}
+#app{display:flex; flex-direction:column; height:100dvh; min-height:0; overflow:hidden}
+html,body{overscroll-behavior:none}
+body.touch{user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
+body.touch .bar{padding-left:max(16px,env(safe-area-inset-left)); padding-right:max(16px,env(safe-area-inset-right))}
+body.touch #railwrap{
+  padding-left:max(16px,env(safe-area-inset-left)); padding-right:max(16px,env(safe-area-inset-right));
+  padding-bottom:max(8px,env(safe-area-inset-bottom));
+}
+body.touch .sheet{padding:max(22px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(22px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left))}
 
 /* ---------- top bar ---------- */
 .bar{
@@ -49,6 +63,26 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* ---------- stage ---------- */
 #stage{position:relative; flex:1 1 auto; min-height:0; background:var(--bg)}
+
+/* ---------- touch: the whole court is the input ---------- */
+#taps{position:absolute; inset:0; z-index:2; display:none; touch-action:none}
+body.touch #taps{display:block}
+.tz{position:absolute; top:0; bottom:0; width:50%; display:block}
+.tz.l{left:0} .tz.r{right:0}
+#taps .tzdiv{
+  position:absolute; left:50%; top:8%; bottom:8%; width:2px; margin-left:-1px;
+  background:linear-gradient(180deg,transparent,var(--turn),transparent);
+  opacity:0; transition:opacity .16s ease; pointer-events:none;
+}
+#taps.turn .tzdiv{opacity:.85}
+#taps.turn .tz{background:radial-gradient(ellipse at center, rgba(150,108,215,.13), transparent 70%)}
+#taps.hit-l .tz.l, #taps.hit-r .tz.r{background:rgba(230,239,240,.10)}
+#rotate{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:none;
+  font-family:var(--f-display); font-size:15px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-2); background:rgba(10,17,20,.82); border:1px solid var(--line-2);
+  padding:10px 16px; border-radius:3px; text-align:center;
+}
 #court{display:block; width:100%; height:100%}
 
 .hud{position:absolute; inset:0; pointer-events:none}
@@ -260,6 +294,29 @@ table.reps th:first-child,table.reps td:first-child{text-align:left}
   .stat[data-opt]{display:none}
   .railkeys{font-size:10px; gap:10px}
 }
+/* landscape on a phone: the court is the app. Header and rail shrink to strips,
+   there is no pad row because the screen itself is the input. */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:520px){
+  .bar{padding:4px 12px; gap:10px}
+  .wordmark{display:none}
+  .stat .k{font-size:8px} .stat .v{font-size:13px}
+  .tbtn{padding:3px 7px; font-size:11px}
+  #railwrap{padding:4px 12px 4px}
+  #raillabels{display:none}
+  #rail{height:34px}
+  .lane .name{display:none}
+  .railkeys{display:none}
+  #verdict{top:2%}
+  #verdict .word{font-size:clamp(20px,3.4vw,30px)}
+  #verdict .cue{font-size:9px} #verdict .ms{font-size:11px}
+  #shotcount{font-size:10px; top:6px; right:10px}
+}
+@media (pointer:coarse) and (orientation:portrait){
+  #rail{height:52px}
+  .railkeys{display:none}
+}
+/* the rotate nudge only while a rally is actually running in portrait */
+@media (orientation:portrait){ body.touch.playing #rotate{display:block} }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
 
@@ -276,8 +333,10 @@ table.reps th:first-child,table.reps td:first-child{text-align:left}
 
   <div id="stage">
     <canvas id="court" aria-hidden="true"></canvas>
+    <div id="taps" aria-hidden="true"><i class="tz l"></i><i class="tz r"></i><b class="tzdiv"></b></div>
     <div class="hud">
       <div id="shotcount"></div>
+      <div id="rotate">Turn your phone sideways</div>
       <div id="verdict" role="status" aria-live="polite"><div class="cue"></div><div class="word"></div><div class="ms"></div></div>
     </div>
 
@@ -457,7 +516,7 @@ table.reps th:first-child,table.reps td:first-child{text-align:left}
 
         <div class="actions">
           <button class="go" id="b-start">Start rally</button>
-          <span style="color:var(--ink-3); font-size:13px">Left thumb on space, right hand on the arrow cluster: ← → turn, ↓ load, ↑ hit.<br>Turn the coach's voice on to learn the beat, then off to test it.</span>
+          <span style="color:var(--ink-3); font-size:13px" id="howto">Left thumb on space, right hand on the arrow cluster: ← → turn, ↓ load, ↑ hit.<br>Turn the coach's voice on to learn the beat, then off to test it.</span>
         </div>
       </div>
     </div>
@@ -487,13 +546,7 @@ table.reps th:first-child,table.reps td:first-child{text-align:left}
     <div class="railkeys" id="railkeys"></div>
   </div>
 
-  <div id="pads">
-    <button class="pad wide" data-k="split">Split</button>
-    <button class="pad" data-k="left">◀ Turn</button>
-    <button class="pad" data-k="right">Turn ▶</button>
-    <button class="pad" data-k="load">Load</button>
-    <button class="pad" data-k="hit">Hit</button>
-  </div>
+
 </div>
 
 <script>
@@ -1131,19 +1184,59 @@ function flash(cue, err, wrongWay, missed){
 }
 
 /* ============================ input ============================ */
-function press(cid, dir){
+function press(cid, dir, atMs){
   let sh = S.shot;
   if(!S.running || !sh) return;
+  const now = atMs === undefined ? performance.now() : atMs;
   // a contact can land after the ball has already left; grade it against the shot it belongs to
-  if(cid === "hit" && (performance.now() - sh.t0)/1000 < 0 && S.grading && !S.grading.hits.hit) sh = S.grading;
+  if(cid === "hit" && (now - sh.t0)/1000 < 0 && S.grading && !S.grading.hits.hit) sh = S.grading;
   if(sh.hits[cid]) return;
-  const t = (performance.now() - sh.t0)/1000;
+  const t = (now - sh.t0)/1000;
   if(t < -sh.feed*0.95 || t > sh.tHit + GRACE) return;
   const err = (t - sh.targets[cid]) * 1000;
   const wrongWay = cid === "turn" && dir !== sh.side;
   sh.hits[cid] = {err, wrongWay};
+  S.inputUsed = S.inputUsed || {};
+  S.inputUsed[TOUCH ? "touch" : "key"] = true;
   if(sh === S.shot) railPip(cid, t, grade(err, wrongWay).ok);
   flash(cid, err, wrongWay, false);
+  buzz(grade(err, wrongWay).ok);
+}
+
+/* ---- touch: the screen is two zones. You always tap a side; only the turn grades which.
+   Which beat a tap belongs to is inferred, because the beats are strictly ordered and only
+   ~220 ms apart at the tightest (load -> contact). Rule: the nearest un-hit beat in time,
+   never one earlier than a beat already taken. ---- */
+const TOUCH = matchMedia("(pointer:coarse)").matches;
+
+function nextBeat(sh, t){
+  let floor = -1;
+  CUES.forEach((c, i) => { if(sh.hits[c.id]) floor = Math.max(floor, i); });
+  let best = null, bestErr = Infinity;
+  CUES.forEach((c, i) => {
+    if(i <= floor || sh.hits[c.id]) return;
+    const e = Math.abs(t - sh.targets[c.id]);
+    if(e < bestErr){ bestErr = e; best = c; }
+  });
+  return best;
+}
+function tapBeat(dir, atMs){
+  let sh = S.shot;
+  if(!S.running || !sh) return;
+  // during the feed the live shot has nothing due yet — a tap then is a late contact
+  if((atMs - sh.t0)/1000 < 0 && S.grading && !S.grading.hits.hit) sh = S.grading;
+  const c = nextBeat(sh, (atMs - sh.t0)/1000);
+  if(c) press(c.id, dir, atMs);
+}
+/* the divider only appears while the turn is the beat in question */
+function turnDue(sh, t){
+  const c = sh && nextBeat(sh, t);
+  return !!(c && c.id === "turn" && t > sh.targets.turn - 0.45 && t < sh.targets.turn + 0.25);
+}
+
+function buzz(ok){
+  if(!TOUCH || !navigator.vibrate) return;          // no-op on iOS: no Vibration API
+  try{ navigator.vibrate(ok ? 12 : [22, 45, 22]); }catch(e){}
 }
 addEventListener("keydown", e => {
   if(e.repeat) return;
@@ -1155,14 +1248,19 @@ addEventListener("keydown", e => {
     if(!$("#sheet-sum").hidden || !$("#sheet-start").hidden) start();
   }
 });
-$("#pads").addEventListener("pointerdown", e => {
-  const b = e.target.closest(".pad"); if(!b) return;
+$("#taps").addEventListener("pointerdown", e => {
+  if(!S.running) return;
   e.preventDefault();
-  const k = b.dataset.k;
-  if(k === "left") press("turn",-1);
-  else if(k === "right") press("turn",1);
-  else press(k, 0);
-});
+  // e.timeStamp is a DOMHighResTimeStamp on the same clock as performance.now(), and is
+  // taken at the hardware event rather than at handler dispatch — closer to the real tap
+  const at = (typeof e.timeStamp === "number" && e.timeStamp > 0 && e.timeStamp < performance.now() + 50)
+    ? e.timeStamp : performance.now();
+  const r = e.currentTarget.getBoundingClientRect();
+  const dir = e.clientX < r.left + r.width/2 ? -1 : 1;
+  const el = e.currentTarget, cls = dir < 0 ? "hit-l" : "hit-r";
+  el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 110);
+  tapBeat(dir, at);
+}, {passive:false});
 
 /* ============================ rally loop ============================ */
 function closeShot(sh){
@@ -1176,6 +1274,10 @@ function closeShot(sh){
   rep.riseMs = sh.tApex * 1000;                     // bounce → top of the bounce
   rep.targetHitMs = (sh.tHit - sh.tb) * 1000;       // where in that window contact was aimed
   rep.clean = CUES.every(c => rep[c.id] !== null && Math.abs(rep[c.id]) <= CLOSE);
+  // touch adds tens of ms of screen-scan and dispatch latency to every beat equally; it would
+  // read as lateness. Tag the rep so lifetime aggregates never mix input methods.
+  const u = S.inputUsed || {};
+  rep.input = (u.touch && !u.key) ? "t" : (u.key && !u.touch) ? "k" : TOUCH ? "t" : "k";
   S.reps.push(rep); S.sess.push(rep);
   updateStats();
 }
@@ -1195,6 +1297,10 @@ function loop(){
   const t = (performance.now() - sh.t0)/1000;
 
   drawScene(sh, t);
+  if(TOUCH){
+    const el = $("#taps"), on = turnDue(sh, t);
+    if(on !== (el.dataset.turn === "1")){ el.dataset.turn = on ? "1" : "0"; el.classList.toggle("turn", on); }
+  }
   const p = Math.max(0, Math.min(1, (t-railT0)/(railT1-railT0)));
   headEl.style.transform = "translateX(" + (p*railEl.clientWidth) + "px)";
 
@@ -1231,11 +1337,13 @@ function updateStats(){
 /* ============================ start / finish ============================ */
 function start(){
   audio();
-  S.reps = []; S.shotIdx = 0; S.grading = null; S.pendingEnd = false; S.running = true;
+  S.reps = []; S.shotIdx = 0; S.grading = null; S.pendingEnd = false; S.inputUsed = {}; S.running = true;
   $("#sheet-start").hidden = true; $("#sheet-sum").hidden = true;
   $("#sum-tablewrap").hidden = true;
   verdEl.style.opacity = "0";
   resize(); buildKeys(); updateStats();
+  document.body.classList.add("playing");
+  if(TOUCH) keepAwake();
   nextShot(null);
   requestAnimationFrame(loop);
 }
@@ -1244,7 +1352,23 @@ function killAudio(sh){
   for(const n of sh.nodes){ try{ n && n.stop(0); }catch(e){} }
   sh.nodes = [];
 }
-function stop(){ S.running = false; killAudio(S.shot); S.grading = null; $("#shotcount").textContent = ""; }
+function stop(){
+  S.running = false; killAudio(S.shot); S.grading = null;
+  $("#shotcount").textContent = "";
+  document.body.classList.remove("playing");
+  $("#taps").className = "";
+  releaseWake();
+}
+
+/* keep the screen alive for the length of a rally */
+let wakeLock = null;
+async function keepAwake(){
+  try{ if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request("screen"); }catch(e){}
+}
+function releaseWake(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
+addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible" && S.running && !wakeLock) keepAwake();
+});
 function finish(){
   stop();
   archive(S.reps);
@@ -1356,7 +1480,8 @@ function renderSummary(){
   }
   const lt = lifetime();
   if(lt.n >= 20){
-    parts.push("Across your last <b>" + lt.n + "</b> saved reps: " +
+    parts.push("Across your last <b>" + lt.n + "</b> saved " +
+      (lt.mode === "t" ? "touch" : "keyboard") + " reps: " +
       CUES.map((c,i) => c.short.toLowerCase() + " " + fmt(lt.m[i])).join(", ") + " ms.");
   }
   parts.push("This session: " + reps.length + " shots.");
@@ -1372,7 +1497,7 @@ function renderSummary(){
 }
 
 /* ============================ memory (per browser) ============================ */
-const LS = "stl.v4";
+const LS = "stl.v5";
 function loadStore(){ try{ return JSON.parse(localStorage.getItem(LS)) || {}; }catch(e){ return {}; } }
 function saveStore(o){ try{ localStorage.setItem(LS, JSON.stringify(o)); }catch(e){} }
 let store = loadStore();
@@ -1406,14 +1531,16 @@ function savePrefs(){
 function archive(reps){
   store.hist = store.hist.concat(reps.map(r => CUES.map(c =>
     r[c.id+"_wrong"] ? "w" : r[c.id] === null || r[c.id] === undefined ? null : Math.round(r[c.id])
-  ))).slice(-400);
+  ).concat(r.input || "k"))).slice(-400);
   saveStore(store);
 }
 function lifetime(){
+  const mode = TOUCH ? "t" : "k";
+  const rows = store.hist.filter(r => (r[CUES.length] || "k") === mode);
   const cols = CUES.map(() => []);
-  for(const r of store.hist) for(let i=0;i<CUES.length;i++)
+  for(const r of rows) for(let i=0;i<CUES.length;i++)
     if(typeof r[i] === "number") cols[i].push(r[i]);
-  return {n: store.hist.length, m: cols.map(mean)};
+  return {n: rows.length, m: cols.map(mean), mode};
 }
 
 /* ============================ settings ============================ */
@@ -1450,6 +1577,15 @@ $("#b-quit").onclick = () => {
 $("#b-reset").onclick = () => { store.hist = []; saveStore(store); S.sess = []; renderSummary(); };
 
 /* ============================ idle backdrop ============================ */
+if(TOUCH){
+  document.body.classList.add("touch");
+  $("#howto").innerHTML = "Tap <b>either side</b> of the screen on each beat — the app knows which " +
+    "beat is due. On the turn, tap the side the ball is going; a divider appears when it matters.<br>" +
+    "Landscape gives the court the whole screen.";
+}
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
 applySaved();
 audio();   // create + decode up front; it stays suspended until the first click
 resize();
@@ -1462,7 +1598,7 @@ resize();
   }
   requestAnimationFrame(idle);
 })();
-window.__stl = {S, setView, makeShot, ballAt, PACE, CUES, start, stop, press};
+window.__stl = {S, setView, makeShot, ballAt, PACE, CUES, start, stop, press, tapBeat, nextBeat, TOUCH, LS};
 window.__render = (sh,t) => { trail.length=0; for(let k=8;k>0;k--) ballAt(sh, t-k*0.016); drawScene(sh,t); };
 })();
 </script>
