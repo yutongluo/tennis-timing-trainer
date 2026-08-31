@@ -2,3 +2,4 @@ node_modules/
 test/screenshots/
 voice/*.raw.wav
 *.log
+artifact.html

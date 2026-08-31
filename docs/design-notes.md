@@ -169,6 +169,24 @@ a 844×390 screen (it was 46 %, with the pads overflowing off-screen entirely). 
 and shows a rotate nudge during a rally, but the court is width-limited there and leaves dead
 space above and below — known, accepted, landscape is the intended orientation.
 
+## Self-contained by construction
+
+`index.html` makes no network requests at all. Two things were fixed to get there:
+
+- **It was not a valid HTML5 document.** No doctype, no `<html>`, no `<body>` — an artefact of
+  being authored for the Claude Artifact tool, which supplies that skeleton itself. Browsers
+  rendered it in **quirks mode** (`document.compatMode === "BackCompat"`). It looked fine only
+  because `box-sizing:border-box` is set explicitly; it was one CSS default away from breaking.
+  Now a proper document, standards mode, `lang="en"`. `tools/artifact-copy.py` strips the
+  skeleton back off for artifact publishing, so both targets stay correct.
+- **The three typefaces came from Google Fonts at load.** Offline they silently fell back to
+  Arial Narrow, losing the condensed display face the design leans on. Now embedded as base64
+  woff2, subset to the 108 characters the page renders: 44 KB for nine faces, verified with
+  `document.fonts.load()` per family and weight.
+
+Verified by loading a lone copy of the file with every non-`file:` request aborted: standards
+mode, all faces resolved, no console errors, on desktop and phone-landscape both.
+
 ## Options
 
 Pace · contact · shots per rally · cue rail · coach's voice · view. Persist per browser under

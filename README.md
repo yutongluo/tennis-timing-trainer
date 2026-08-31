@@ -9,10 +9,13 @@ around that: a signed **bias** per beat, not a score.
 
 **Play it:** `open index.html`. No server, no build, no network.
 
-`index.html` is the whole app — no dependencies, no build step, cue audio embedded as base64
-PCM, works from `file://`. The manifest, service worker and icons alongside it are additive:
-they make it installable and offline-capable when served over HTTPS, and nothing breaks
-without them.
+`index.html` is the whole app and it is **completely self-contained**: a valid HTML5
+document with the cue audio, the three typefaces and every asset embedded. It makes zero
+network requests. Double-click it, email it, put it on a USB stick — it runs in any modern
+browser with no server, no build step and no connection.
+
+The manifest, service worker and icons alongside it are additive: they make it installable
+and offline-capable as a real app when served over HTTPS, and nothing breaks without them.
 
 ## The four beats
 
@@ -64,6 +67,7 @@ docs/design-notes.md     why every number is what it is, with sources
 voice/build-voice.sh     regenerate the cue words (espeak-ng + ffmpeg)
 voice/inject-voice.py    measure perceptual centres, embed into the HTML
 voice/*.wav              the four cue words, 16 kHz mono PCM
+tools/artifact-copy.py   strips the HTML skeleton for publishing as a Claude artifact
 test/                    Playwright harness — physics, audio timing, a bot rally
 .github/workflows/       CI: runs the tests on every push
 ```
@@ -84,6 +88,17 @@ here gets you version history and backup, not a URL. Three ways to get a link:
 
 If you later want a shareable URL without making this repo public, copy `index.html` alone
 into a small public repo — it is genuinely self-contained, so nothing else has to come with it.
+
+## Fonts
+
+Saira Condensed, IBM Plex Sans and IBM Plex Mono are embedded as base64 woff2, subset to the
+108 characters the page actually renders — 44 KB for nine faces. They were fetched from
+Google at load time before; that meant a flash of fallback text, and on a court with no
+signal the condensed display face — a lot of the app's character — simply did not appear.
+
+To change them: swap the sources, re-subset with `pyftsubset --text-file=`, and replace the
+`@font-face` block at the top of the stylesheet. `document.fonts.load()` for each family and
+weight is the check that they actually resolved.
 
 ## Cue audio
 
