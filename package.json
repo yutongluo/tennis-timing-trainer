@@ -5,10 +5,11 @@
   "description": "Split Turn Load — a browser reaction trainer for the four timing beats of a tennis rally",
   "type": "module",
   "scripts": {
-    "test": "node test/physics.mjs && node test/timing-audio.mjs && node test/play.mjs",
+    "test": "node test/physics.mjs && node test/timing-audio.mjs && node test/play.mjs && node test/touch.mjs",
     "test:physics": "node test/physics.mjs",
     "test:audio": "node test/timing-audio.mjs",
     "test:play": "node test/play.mjs",
+    "test:touch": "node test/touch.mjs",
     "voice": "bash voice/build-voice.sh && python3 voice/inject-voice.py"
   },
   "devDependencies": {

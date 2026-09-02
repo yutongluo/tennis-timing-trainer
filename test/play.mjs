@@ -30,7 +30,9 @@ const r = await page.evaluate(() => {
     headline: document.querySelector('#sum-headline').textContent,
     strips: document.querySelectorAll('#sum-strips .strip').length,
     lanes: document.querySelectorAll('#rail .lane').length,
-    stored: JSON.parse(localStorage.getItem('stl.v4') || '{}').hist?.length ?? 0
+    tagged: (JSON.parse(localStorage.getItem(window.__stl.LS) || '{}').hist || [])
+              .filter(row => row[4] === 'k' || row[4] === 't').length,
+    stored: JSON.parse(localStorage.getItem(window.__stl.LS) || '{}').hist?.length ?? 0
   };
 });
 
@@ -46,6 +48,8 @@ check('headline names the worst beat', /turn/i.test(r.headline), r.headline.slic
 check('one summary strip per beat', r.strips === 4, `${r.strips}`);
 check('one rail lane per beat', r.lanes === 4, `${r.lanes}`);
 check('reps persisted to localStorage', r.stored === SHOTS, `${r.stored} rows`);
+check('stored reps are tagged with the input method',
+      r.tagged === SHOTS, `${r.tagged}/${SHOTS} tagged`);
 check('no page errors', errors.length === 0, errors.join(' | '));
 
 await browser.close();

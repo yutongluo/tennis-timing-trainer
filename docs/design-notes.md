@@ -139,6 +139,54 @@ decoded once and scheduled on the audio clock.
    with a shot's whole soundtrack scheduled up front rather than fired from
    `requestAnimationFrame`. Verified by `test/timing-audio.mjs` to within 2 ms.
 
+## Touch input
+
+On a coarse pointer the four labelled pads are replaced by two zones covering the whole
+screen. One rule: **you always tap a side; only the turn grades which side.** Four small
+buttons is the wrong input for a timing game — aiming a thumb costs you the thing being
+measured, and it takes your eyes off the ball.
+
+Three sub-problems, and how each is settled:
+
+- **Which beat does a tap mean?** Inferred: the nearest un-hit beat in time, never one
+  earlier than a beat already taken. The tightest gap is load → contact at ~220 ms, so this
+  has to be right. It fails on one case — a split so late it lands in the turn's window is
+  graded as a turn — but a >260 ms split error is already a miss, so little is lost.
+- **Why not swipe for the turn?** A swipe takes 100–200 ms to express and its duration varies
+  with the thumb; that variance lands straight in a measurement graded to ±60 ms. Timestamping
+  `touchstart` and resolving direction afterwards would fix the timing, but it buys
+  unambiguity that zones already give.
+- **Timestamps.** `PointerEvent.timeStamp` is used rather than `performance.now()` at handler
+  dispatch — it is on the same clock but taken at the hardware event.
+
+**Touch latency is a systematic offset, not noise.** Screen scan plus dispatch adds tens of
+milliseconds to every beat equally, so it reads as lateness. Each rep is tagged `t` or `k` and
+lifetime aggregates are filtered to the current input method. Phone and desktop numbers are
+not comparable and the app does not pretend otherwise.
+
+Layout is landscape-first: the header and rail collapse to strips and the court takes ~79 % of
+a 844×390 screen (it was 46 %, with the pads overflowing off-screen entirely). Portrait works
+and shows a rotate nudge during a rally, but the court is width-limited there and leaves dead
+space above and below — known, accepted, landscape is the intended orientation.
+
+## Self-contained by construction
+
+`index.html` makes no network requests at all. Two things were fixed to get there:
+
+- **It was not a valid HTML5 document.** No doctype, no `<html>`, no `<body>` — an artefact of
+  being authored for the Claude Artifact tool, which supplies that skeleton itself. Browsers
+  rendered it in **quirks mode** (`document.compatMode === "BackCompat"`). It looked fine only
+  because `box-sizing:border-box` is set explicitly; it was one CSS default away from breaking.
+  Now a proper document, standards mode, `lang="en"`. `tools/artifact-copy.py` strips the
+  skeleton back off for artifact publishing, so both targets stay correct.
+- **The three typefaces came from Google Fonts at load.** Offline they silently fell back to
+  Arial Narrow, losing the condensed display face the design leans on. Now embedded as base64
+  woff2, subset to the 108 characters the page renders: 44 KB for nine faces, verified with
+  `document.fonts.load()` per family and weight.
+
+Verified by loading a lone copy of the file with every non-`file:` request aborted: standards
+mode, all faces resolved, no console errors, on desktop and phone-landscape both.
+
 ## Options
 
 Pace · contact · shots per rally · cue rail · coach's voice · view. Persist per browser under
